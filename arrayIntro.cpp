@@ -180,3 +180,13 @@ int main()
 
     findDuplicate(array, size);
 }
+
+// PROBLEMS
+/*
+1) Find Unique ==> https://www.codingninjas.com/codestudio/problems/find-unique_625159
+2) Unique No. of Occurences ==> https://leetcode.com/submissions/detail/779596767/
+3) Find Duplicate ==> https://www.codingninjas.com/codestudio/problems/duplicate-in-array_893397
+4) Find All Duplicates in an Array ==> https://leetcode.com/submissions/detail/779869187/
+5) Triplet Sum ==> https://www.codingninjas.com/codestudio/problems/triplets-with-given-sum_893028
+6) Sort 0 1 2 ==> https://www.codingninjas.com/codestudio/problems/sort-0-1-2_631055
+*/
