@@ -187,6 +187,66 @@ int main()
 2) Unique No. of Occurences ==> https://leetcode.com/submissions/detail/779596767/
 3) Find Duplicate ==> https://www.codingninjas.com/codestudio/problems/duplicate-in-array_893397
 4) Find All Duplicates in an Array ==> https://leetcode.com/submissions/detail/779869187/
-5) Triplet Sum ==> https://www.codingninjas.com/codestudio/problems/triplets-with-given-sum_893028
-6) Sort 0 1 2 ==> https://www.codingninjas.com/codestudio/problems/sort-0-1-2_631055
+5) Pair Sum ==> https://www.codingninjas.com/codestudio/problems/pair-sum_697295?
+6) Triplet Sum ==> https://www.codingninjas.com/codestudio/problems/triplets-with-given-sum_893028
+7) Sort 0 1 2 ==> https://www.codingninjas.com/codestudio/problems/sort-0-1-2_631055
+*/
+
+
+/*
+	// Triplet Sum.
+    // O(N^3) goes into TLE
+    vector<vector<int>> ans;
+    for(int i=0; i<n; i++){
+        for(int j=i+1; j<n; j++){
+            for(int k=j+1; k<n; k++){
+                if(arr[i]+arr[j]+arr[k]==K){
+                    vector<int> temp;
+                    temp.push_back(arr[i]);
+                    temp.push_back(arr[j]);
+                    temp.push_back(arr[k]);
+                    sort(temp.begin(), temp.end());
+                    if(find(ans.begin(),ans.end(),temp)==ans.end())
+                        ans.push_back(temp);
+                }
+            }
+        }
+    }
+    sort(ans.begin(), ans.end());
+    return ans;
+
+    // ==> Things Learned -> std::find -> https://www.geeksforgeeks.org/std-find-in-cpp/
+*/
+
+/*
+
+	// Triplet Sum.
+    // >O(N^2)
+    // Solved using 2-pointer approach inside a loop
+
+    vector<vector<int>> ans;
+    sort(arr.begin(), arr.end());
+    for(int i=0; i<n; i++){
+        int left=i+1, right=n-1;
+        
+        while(left<right){
+             if(arr[i]+arr[left]+arr[right]==K){
+                ans.push_back({arr[i], arr[left], arr[right]});
+                int x = arr[left];
+                int y = arr[right];
+                while(left<right && arr[left] == x)
+                    left++;
+                while(left<right && arr[right] ==y)
+                    right--;
+                }
+            else if(arr[i]+arr[left]+arr[right]<K)
+                left++;
+            else
+                right--;
+        }
+        while(i+1<n && arr[i]==arr[i+1])
+            i++;
+    }
+    sort(ans.begin(), ans.end());
+    return ans;  
 */
