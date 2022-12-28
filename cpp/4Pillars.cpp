@@ -7,6 +7,8 @@
         //Function Overloading
         //Operator Overloading
             //Functions that only differ in return type cannot be Overloaded
+            //Operator Overloading using Friend Function 
+        //Templates
     //-Runtime Polymorphism
         //Method Overriding(Creating methods with same name, arguments and return type in parent class and child class is Method Overriding)
         //Virtual Functions
