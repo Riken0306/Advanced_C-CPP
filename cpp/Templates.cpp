@@ -9,6 +9,7 @@ template <typename T> T myMax(T x, T y){
 }
 
 //Template Class with default argument
+//Can use typename instead of class
 template <class T, class U = char> class A {
 public:
     T x;
