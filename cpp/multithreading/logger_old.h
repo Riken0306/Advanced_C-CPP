@@ -14,11 +14,25 @@
 #define BUFFER_CAPACITY 10
 
 // Define log levels
+#define SYSLOG_LEVELS \
+    X(SYSLOG_LEVEL_TYPE_ERROR,      "ERROR")    \
+    X(SYSLOG_LEVEL_TYPE_EXCEP,      "EXCEP")    \
+    X(SYSLOG_LEVEL_TYPE_WARNING,    "WARNING")  \
+    X(SYSLOG_LEVEL_TYPE_INFO,       "INFO")     \
+    X(SYSLOG_LEVEL_TYPE_DEBUG,      "DEBUG")    \
+    X(SYSLOG_LEVEL_TYPE_ENTER,      "ENTER")
+
 typedef enum {
-    INFO,
-    WARNING,
-    ERROR
-}LogLevel_e;
+    #define X(name, str) name,
+    SYSLOG_LEVELS
+    #undef X
+} LogLevel_e;
+
+static const char *logLevelStr[] = {
+    #define X(name, str) str,
+    SYSLOG_LEVELS
+    #undef X
+};
 
 // Log entry structure
 typedef struct {
@@ -27,7 +41,7 @@ typedef struct {
     std::chrono::system_clock::time_point timestamp;
 }LogEntry_t;
 
-extern std::condition_variable cv;
+//extern std::condition_variable cv;
 
 // Ring Buffer for log entries
 class LogBuffer_c {
@@ -59,12 +73,13 @@ public:
         return writeIndex == readIndex;
     }
 
-    //Task1 Tommorow
+    //Task1
     //Implement app_log_stringf() which can be called from any thread like std::cout << message;
     template <typename... Args>
     void app_log_stringf(LogLevel_e level, Args&&... args) {
         std::ostringstream oss;
         (oss<<...<<args);
+        oss << std::endl;
 
         LogEntry_t entry = {level, oss.str(), std::chrono::system_clock::now()};
 
@@ -76,13 +91,15 @@ public:
         cv.notify_one();  // Notify the log writer thread
     }
 
+    friend void logWriter();
+
 private:
     size_t capacity;
     size_t writeIndex;
     size_t readIndex;
     std::vector<LogEntry_t> buffer;
     std::mutex mutex;
-    //std::condition_variable cv;
+    std::condition_variable cv;
 };
 
 extern LogBuffer_c logBuffer;

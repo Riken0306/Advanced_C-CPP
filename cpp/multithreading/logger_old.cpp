@@ -1,7 +1,6 @@
 #include "logger_old.h"
 
 LogBuffer_c logBuffer(BUFFER_CAPACITY);
-std::condition_variable cv;
 
 // Simulated logging function to generate log entries
 void logGenerator(int id) {
@@ -15,7 +14,7 @@ void logGenerator(int id) {
 
     for (int i = 0; i < 5; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500)); // Simulate work
-        logBuffer.app_log_stringf(INFO, "RIKEN ", logMessages[i % 5]);
+        logBuffer.app_log_stringf(SYSLOG_LEVEL_TYPE_ERROR, "RIKEN ", logMessages[i % 5]);
     }
 }
 
@@ -29,7 +28,8 @@ void logWriter() {
 
         // Wait for the log buffer to have entries
         std::unique_lock<std::mutex> lock(localMutex);
-        cv.wait(lock, [] { return !logBuffer.isEmpty(); });
+        logBuffer.cv.wait(lock, [] { return !logBuffer.isEmpty(); });
+
 
         // Consume log entries from the buffer and write to the file
         // Task2 - Implement multiple poping upon one notify
@@ -38,18 +38,13 @@ void logWriter() {
             auto timestamp = std::chrono::system_clock::to_time_t(entry.timestamp);
             std::string timeStr = std::ctime(&timestamp);  // Convert to string
             timeStr.pop_back();
-            oss << "[" << timeStr << "] ";
 
-            // Print log level and message
-            switch (entry.level) {
-                case INFO: oss << "[INFO] "; break;
-                case WARNING: oss << "[WARNING] "; break;
-                case ERROR: oss << "[ERROR] "; break;
-            }
+            oss << "[" << timeStr << "] ";
+            oss << "[" << logLevelStr[entry.level] << "] ";
             oss << entry.message;
 
-            logFile << oss.str() << std::endl;
-            std::cout << oss.str() << std::endl;
+            logFile << oss.str();
+            std::cout << oss.str();
         }
     }
 
@@ -84,7 +79,7 @@ int main() {
     //Put this in SIGTERM so on Ctrl-c this will execute
     // After all log generators are done, signal the logger to finish
     //done = true;
-    cv.notify_all(); // Notify the logger to process remaining messages
+    //cv.notify_all(); // Notify the logger to process remaining messages
 
     // Join the log writer thread
     logger.join();
