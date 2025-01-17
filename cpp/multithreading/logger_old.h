@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <iomanip>
 
 #define BUFFER_CAPACITY 10
 
@@ -20,12 +21,13 @@
     X(SYSLOG_LEVEL_TYPE_WARNING,    "WARNING")  \
     X(SYSLOG_LEVEL_TYPE_INFO,       "INFO")     \
     X(SYSLOG_LEVEL_TYPE_DEBUG,      "DEBUG")    \
-    X(SYSLOG_LEVEL_TYPE_ENTER,      "ENTER")
+    X(SYSLOG_LEVEL_TYPE_ENTER,      "ENTER")    \
 
 typedef enum {
     #define X(name, str) name,
     SYSLOG_LEVELS
     #undef X
+    SYSLOG_LEVEL_TYPE_MAX = 0xFF  // Used as a boundary
 } LogLevel_e;
 
 static const char *logLevelStr[] = {
@@ -34,6 +36,9 @@ static const char *logLevelStr[] = {
     #undef X
 };
 
+#define LOG_LEVEL_TO_STRING(level) \
+    (((level) <= SYSLOG_LEVEL_TYPE_ENTER) ? logLevelStr[(level)] : "UNKNOWN")
+
 // Log entry structure
 typedef struct {
     LogLevel_e level;
@@ -41,57 +46,16 @@ typedef struct {
     std::chrono::system_clock::time_point timestamp;
 }LogEntry_t;
 
-//extern std::condition_variable cv;
-
-// Ring Buffer for log entries
+// Log Buffer Class for Managing Log Entries
 class LogBuffer_c {
 public:
     LogBuffer_c(size_t capacity) : capacity(capacity), writeIndex(0), readIndex(0), buffer(capacity) {}
 
-    bool push(const LogEntry_t& entry) {
-        std::lock_guard<std::mutex> lock(mutex);
-        if ((writeIndex + 1) % capacity == readIndex) {  // Buffer is full
-            return false;
-        }
-        buffer[writeIndex] = entry;
-        writeIndex = (writeIndex + 1) % capacity;
-        return true;
-    }
-
-    bool pop(LogEntry_t& entry) {
-        std::lock_guard<std::mutex> lock(mutex);
-        if (writeIndex == readIndex) {  // Buffer is empty
-            return false;
-        }
-        entry = buffer[readIndex];
-        readIndex = (readIndex + 1) % capacity;
-        return true;
-    }
-
-    bool isEmpty() {
-        std::lock_guard<std::mutex> lock(mutex);
-        return writeIndex == readIndex;
-    }
-
-    //Task1
-    //Implement app_log_stringf() which can be called from any thread like std::cout << message;
     template <typename... Args>
-    void app_log_stringf(LogLevel_e level, Args&&... args) {
-        std::ostringstream oss;
-        (oss<<...<<args);
-        oss << std::endl;
+    void app_log_stringf(LogLevel_e level, Args&&... args);
+    void app_log_hexdump(LogLevel_e level, uint8_t *data, uint16_t size);
 
-        LogEntry_t entry = {level, oss.str(), std::chrono::system_clock::now()};
-
-        // Try to push the log entry into the buffer
-        while (!push(entry)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Buffer is full, retry
-            std::cout << "Not able to push" << std::endl;
-        }
-        cv.notify_one();  // Notify the log writer thread
-    }
-
-    friend void logWriter();
+    friend void logFlushTask();
 
 private:
     size_t capacity;
@@ -100,6 +64,14 @@ private:
     std::vector<LogEntry_t> buffer;
     std::mutex mutex;
     std::condition_variable cv;
+
+    bool push(const LogEntry_t& entry);
+    bool pop(LogEntry_t& entry);
+    bool isEmpty();
 };
 
 extern LogBuffer_c logBuffer;
+#define APP_LOG_STRINGF(level, ...) logBuffer.app_log_stringf(level, __VA_ARGS__)
+#define APP_LOG_HEXDUMP(level, data, size) logBuffer.app_log_hexdump(level, data, size)
+
+void logFlushTaskInit();
