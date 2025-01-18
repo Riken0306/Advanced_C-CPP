@@ -1,6 +1,6 @@
 /**
  * @file
- * logger_old.cpp
+ * logger.cpp
  * Implementation of Logger Functions
  *
  *	Created on: 18 January, 2025

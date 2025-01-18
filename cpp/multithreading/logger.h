@@ -1,6 +1,6 @@
 /**
  * @file
- * logger_old.h
+ * logger.h
  * Prototypes, structures and Classes for the logger module.
  *
  *	Created on: 18 January, 2025
