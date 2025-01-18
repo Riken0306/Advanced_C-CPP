@@ -1,10 +1,21 @@
+/**
+ * @file
+ * logger_old.h
+ * Prototypes, structures and Classes for the logger module.
+ *
+ *	Created on: 18 January, 2025
+ *		Author: Riken
+ */
+
+#ifndef LOGGER_OLD_H
+#define LOGGER_OLD_H
+
 #include <iostream>
 #include <ostream>
 #include <thread>
 #include <mutex>
 #include <queue>
 #include <condition_variable>
-#include <atomic>
 #include <fstream>
 #include <chrono>
 #include <string>
@@ -13,6 +24,7 @@
 #include <iomanip>
 
 #define BUFFER_CAPACITY 10
+#define LOG_FILE_PATH   "log.txt"
 
 // Define log levels
 #define SYSLOG_LEVELS \
@@ -51,8 +63,25 @@ class LogBuffer_c {
 public:
     LogBuffer_c(size_t capacity) : capacity(capacity), writeIndex(0), readIndex(0), buffer(capacity) {}
 
+    //Templated cannot be defined in .cpp
+    //Templates are not functions in the traditional sense;
+    //they are blueprints that generate functions at compile-time
     template <typename... Args>
-    void app_log_stringf(LogLevel_e level, Args&&... args);
+    void app_log_stringf(LogLevel_e level, Args&&... args)
+    {
+        std::ostringstream oss;
+        (oss<<...<<args);
+
+        LogEntry_t entry = {level, oss.str(), std::chrono::system_clock::now()};
+
+        // Try to push the log entry into the buffer
+        while (!push(entry)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Buffer is full, retry
+            std::cout << "Not able to push" << std::endl;
+        }
+        cv.notify_one();  // Notify the log writer thread
+    }
+
     void app_log_hexdump(LogLevel_e level, uint8_t *data, uint16_t size);
 
     friend void logFlushTask();
@@ -75,3 +104,5 @@ extern LogBuffer_c logBuffer;
 #define APP_LOG_HEXDUMP(level, data, size) logBuffer.app_log_hexdump(level, data, size)
 
 void logFlushTaskInit();
+
+#endif

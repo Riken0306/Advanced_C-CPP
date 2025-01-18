@@ -1,3 +1,12 @@
+/**
+ * @file
+ * logger_old.cpp
+ * Implementation of Logger Functions
+ *
+ *	Created on: 18 January, 2025
+ *		Author: Riken
+ */
+
 #include "logger_old.h"
 
 LogBuffer_c logBuffer(BUFFER_CAPACITY);
@@ -27,22 +36,6 @@ bool LogBuffer_c::isEmpty() {
     return writeIndex == readIndex;
 }
 
-template <typename... Args>
-void LogBuffer_c:: app_log_stringf(LogLevel_e level, Args&&... args) {
-    std::ostringstream oss;
-    (oss<<...<<args);
-    oss << std::endl;
-
-    LogEntry_t entry = {level, oss.str(), std::chrono::system_clock::now()};
-
-    // Try to push the log entry into the buffer
-    while (!push(entry)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Buffer is full, retry
-        std::cout << "Not able to push" << std::endl;
-    }
-    cv.notify_one();  // Notify the log writer thread
-}
-
 void LogBuffer_c::app_log_hexdump(LogLevel_e level, uint8_t *data, uint16_t size) {
     std::ostringstream oss;
     oss << std::hex << std::uppercase << std::setfill('0');  // Set hex format and uppercase
@@ -68,7 +61,7 @@ void LogBuffer_c::app_log_hexdump(LogLevel_e level, uint8_t *data, uint16_t size
 
 void logFlushTask() {
     std::mutex localMutex; // Mutex for the condition variable
-    std::ofstream logFile("log.txt");
+    std::ofstream logFile(LOG_FILE_PATH);
 
     while (true) {
         LogEntry_t entry;
@@ -91,8 +84,8 @@ void logFlushTask() {
             oss << "[" << logLevelStr[entry.level] << "] ";
             oss << entry.message;
 
-            logFile << oss.str();
-            std::cout << oss.str();
+            logFile << oss.str() << std::endl;
+            std::cout << oss.str() << std::endl;
             lock.lock();
         }
 
@@ -108,49 +101,3 @@ void logFlushTaskInit() {
     logger.detach();
 }
 
-// Simulated logging function to generate log entries
-void logProducerTask(int id) {
-    std::string logMessages[] = {
-        "Application started.",
-        "Warning: Low memory.",
-        "Error: File not found.",
-        "Info: Task completed successfully.",
-        "Error: Invalid input."
-    };
-
-    uint8_t data[] ={   0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55,
-                        0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55,
-                        0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55,
-                        0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55,
-                    };
-
-    for (int i = 0; i < 5; ++i) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Simulate work
-        APP_LOG_STRINGF(SYSLOG_LEVEL_TYPE_ERROR, "RIKEN ", logMessages[i % 5]);
-        APP_LOG_HEXDUMP(SYSLOG_LEVEL_TYPE_DEBUG, data, sizeof(data));
-    }
-}
-
-int main() {
-    int numGenerators = 3; // Number of log-generating threads
-    std::vector<std::thread> logGenerators;
-
-    // Create worker threads for log generation
-    for (int i = 0; i < numGenerators; ++i) {
-        logGenerators.push_back(std::thread(logProducerTask, i));
-    }
-
-    logFlushTaskInit();
-
-    // Join the log generator threads
-    for (auto& generator : logGenerators) {
-        generator.join();
-    }
-
-    while (true)
-    {
-        //FSM
-    }
-
-    return 0;
-}
