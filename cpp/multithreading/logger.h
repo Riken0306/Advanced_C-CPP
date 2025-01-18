@@ -7,8 +7,8 @@
  *		Author: Riken
  */
 
-#ifndef LOGGER_OLD_H
-#define LOGGER_OLD_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
 #include <iostream>
 #include <ostream>

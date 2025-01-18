@@ -7,7 +7,7 @@
  *		Author: Riken
  */
 
-#include "logger_old.h"
+#include "logger.h"
 
 LogBuffer_c logBuffer(BUFFER_CAPACITY);
 
